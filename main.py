@@ -86,13 +86,9 @@ async def get_map_data(db: Session = Depends(get_db)):
     ).all()
     offline_hexes = set(h3.latlng_to_cell(u.last_lat, u.last_lon, 9) for u in offline_users)
 
-    #final_outage_hexes = list(offline_hexes - online_hexes)
     final_hexes = list(offline_hexes - online_hexes)
     
-    #print(final_outage_hexes)
-    print(final_hexes)
 
-    #if not final_outage_hexes:
     if not final_hexes:
         return {"type": "FeatureCollection", "features": []}
 
@@ -114,42 +110,6 @@ async def get_map_data(db: Session = Depends(get_db)):
     
     return {"type": "FeatureCollection", "features": features}
 
-    """
-    # Пытаемся найти функцию объединения в разных версиях библиотеки
-    try:
-        if hasattr(h3, 'cells_to_polygons'):
-            # Актуальный стандарт v4.x
-            merged_polygons = h3.cells_to_polygons(final_outage_hexes)
-        elif hasattr(h3, 'h3_set_to_multi_polygon'):
-            # Старый стандарт v3.x
-            merged_polygons = h3.h3_set_to_multi_polygon(final_outage_hexes, geo_json=False)
-        else:
-            # Если объединение не поддерживается, возвращаем одиночные гексагоны
-            return create_individual_hexes_geojson(final_outage_hexes)
-    except Exception as e:
-        print(f"Ошибка объединения: {e}")
-        return create_individual_hexes_geojson(final_outage_hexes)
-
-    features = []
-    for poly in merged_polygons:
-        geojson_rings = []
-        for ring in poly:
-            # Конвертируем (lat, lng) -> [lng, lat]
-            # ВНИМАНИЕ: в v4 h3.cells_to_polygons возвращает координаты в разном порядке 
-            # в зависимости от системы. Проверим тип данных.
-            ring_coords = [[float(c[1]), float(c[0])] for c in ring]
-            if ring_coords[0] != ring_coords[-1]:
-                ring_coords.append(ring_coords[0])
-            geojson_rings.append(ring_coords)
-            
-        features.append({
-            "type": "Feature",
-            "geometry": {"type": "Polygon", "coordinates": geojson_rings},
-            "properties": {"status": "offline"}
-        })
-    
-    return {"type": "FeatureCollection", "features": features}
-    """
 
 def create_individual_hexes_geojson(hex_list):
     """Запасной метод: если объединение не работает, рисуем гексагоны по отдельности"""
