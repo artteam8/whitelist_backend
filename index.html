@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Outage Map</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>#map { height: 100vh; }</style>
+</head>
+<body>
+    <div id="map"></div>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        var map = L.map('map').setView([55.7558, 37.6173], 11);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+
+	let currentOutageLayer = null; // Хранилище для текущего слоя
+
+async function updateMap() {
+    try {
+        const response = await fetch('/map');
+        const data = await response.json();
+        
+        // 1. ОЧИСТКА: Удаляем старый слой, если он уже был нарисован
+        if (currentOutageLayer) {
+            map.removeLayer(currentOutageLayer);
+        }
+
+        // 2. ОТРИСОВКА: Создаем новый слой
+        currentOutageLayer = L.geoJSON(data, {
+            style: function (feature) {
+                return {
+                    stroke: false,       // Убираем границы для эффекта "слияния"
+                    fillColor: "#ff2b0f", // Красный цвет
+                    fillOpacity: 0.6      // Фиксированная прозрачность (40%)
+                };
+            }
+        }).addTo(map);
+
+    } catch (e) {
+        console.error("Ошибка обновления:", e);
+    }
+}
+
+        updateMap();
+        setInterval(updateMap, 30000); // Обновлять раз в 30 сек
+    </script>
+</body>
+</html>
